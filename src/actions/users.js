@@ -1,13 +1,13 @@
+import axios from 'axios';
+
 export const userSignupRequest = (user) => {
   return dispatch => {
-    return fetch("/api/users",
-    {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      method: "POST",
-      body: JSON.stringify(user)
-    });
+    return axios.post("/api/users", user);
+  }
+}
+
+export const isUserExists = (identify) => {
+  return dispatch => {
+    return axios.get(`/api/users/${identify}`);
   }
 }

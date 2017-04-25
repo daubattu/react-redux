@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import axios from 'axios';
 import timezones from '../data/timezones.js';
 import { connect } from 'react-redux';
-import { userSignupRequest } from '../actions/users.js';
+import { userSignupRequest, isUserExists} from '../actions/users.js';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import validateInput from '../../server/shared/validations/signup.js';
@@ -20,8 +20,12 @@ class Signup extends Component {
       confirmPassword: '',
       timezone: '',
       errors: {},
-      isLoading: false
+      isLoading: false,
+      isvalid: false
     }
+  }
+  onChange(e) {
+    this.setState({[e.target.name]: e.target.value});
   }
   isValid() {
     const { errors, isValid } = validateInput(this.state);
@@ -30,9 +34,27 @@ class Signup extends Component {
     }
     return isValid;
   }
+  checkUserExists(e) {
+    const field = e.target.name;
+    const val = e.target.value;
+    if (val !== '') {
+      this.props.isUserExists(val).then(res => {
+        let { errors } = this.state;
+        let isvalid;
+        if(res.data.user) {
+          errors[field] = `This ${field} not availble`;
+          isvalid = true;
+        } else {
+          errors[field] = '';
+          isvalid: false;
+        }
+        this.setState({ errors, isvalid });
+      });
+    }
+  }
   onSubmit(e) {
-    console.log('this.state', this.state);
     e.preventDefault();
+    console.log(this.state);
     if (this.isValid()) {
       this.setState({ errors: {}, isLoading: true });
       this.props.userSignupRequest(this.state).then(
@@ -45,10 +67,8 @@ class Signup extends Component {
         },
         (err) => this.setState({ errors: err.response.data, isLoading: false })
       );
+      console.log(this.state);
     }
-  }
-  onChange(e) {
-    this.setState({[e.target.name]: e.target.value});
   }
   render() {
 
@@ -64,6 +84,7 @@ class Signup extends Component {
           <TextFieldGroup
             label="Username"
             field="username"
+            checkUserExists={this.checkUserExists.bind(this)}
             error={errors.username}
             onChange={this.onChange.bind(this)}
           />
@@ -76,6 +97,7 @@ class Signup extends Component {
           <TextFieldGroup
             label="Password"
             field="password"
+            checkUserExists={this.checkUserExists.bind(this)}
             error={errors.password}
             onChange={this.onChange.bind(this)}
             type="password"
@@ -102,7 +124,7 @@ class Signup extends Component {
           </div>
           <div className="form-group">
             <button
-              disabled={this.state.isLoading}
+              disabled={this.state.isLoading || this.state.isvalid}
               className="btn btn-primary btn-lg">
               Sign up
             </button>
@@ -117,4 +139,4 @@ class Signup extends Component {
 Signup.propTypes = {
   userSignupRequest: PropTypes.func.isRequired
 }
-export default connect(null, { userSignupRequest, addFlashMessage})(Signup);
+export default connect(null, { userSignupRequest, isUserExists, addFlashMessage})(Signup);
